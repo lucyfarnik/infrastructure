@@ -75,10 +75,25 @@ elif args.venv:
     print(f'source {args.venv}/bin/activate')
 
 elif args.conda_env is not None:
-    # Find conda path
-    conda_path = Path(subprocess.run(['which', 'conda'], capture_output=True, encoding='utf-8').stdout)
-    conda_activate_path = str(conda_path.parents[1] / 'etc/profile.d/conda.sh')
-    
+    # Find conda path - check common locations since conda may not be in PATH
+    conda_activate_path = None
+    for conda_dir in ['~/miniconda3', '~/anaconda3', '~/miniforge3', '~/mambaforge']:
+        candidate = Path(conda_dir).expanduser() / 'etc/profile.d/conda.sh'
+        if candidate.exists():
+            conda_activate_path = str(candidate)
+            break
+
+    # Fall back to trying which conda
+    if conda_activate_path is None:
+        result = subprocess.run(['which', 'conda'], capture_output=True, encoding='utf-8')
+        if result.returncode == 0 and result.stdout.strip():
+            conda_path = Path(result.stdout.strip())
+            conda_activate_path = str(conda_path.parents[1] / 'etc/profile.d/conda.sh')
+
+    if conda_activate_path is None:
+        print("# ERROR: Could not find conda installation", file=sys.stderr)
+        sys.exit(1)
+
     print(f'source {conda_activate_path}')
     print(f'conda activate {args.conda_env}')
 print('')
