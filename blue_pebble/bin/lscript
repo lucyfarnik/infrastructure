@@ -50,15 +50,25 @@ if args.name:
     path=args.name
     print(f"#SBATCH --job-name={os.path.basename(path)}")
     print(f"#SBATCH --output={path}{array_id}.o")
+    use_logs_dir = False
 
 elif args.autoname:
     path = sys.argv[cmd_idx+3]
     print(f"#SBATCH --job-name={os.path.basename(path)}")
     print(f"#SBATCH --output={path}{array_id}.o")
+    use_logs_dir = False
 
-          
+else:
+    # Default: put logs in logs/ directory to avoid cluttering working dir
+    print(f"#SBATCH --output=logs/%x_%j{array_id}.out")
+    print(f"#SBATCH --error=logs/%x_%j{array_id}.err")
+    use_logs_dir = True
+
 print('')
 print('cd $SLURM_SUBMIT_DIR')
+
+if use_logs_dir:
+    print('mkdir -p logs')
 
 if args.port:
     for i in range(1,6):
